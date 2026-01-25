@@ -1,0 +1,1 @@
+[Applied AI Basic Term Chat](https://www.perplexity.ai/search/i-want-you-to-help-me-revise-t-iyCDtdN0SHO62UD37AlNJw)
