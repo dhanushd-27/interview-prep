@@ -14,6 +14,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import React from "react";
 import { Github } from "lucide-react";
 import { ModeToggle } from "@/components/mode-toggle";
+import { Button } from "@/components/ui/button";
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -52,7 +53,9 @@ export function SiteHeader() {
                       <BreadcrumbLink href={href}>{title}</BreadcrumbLink>
                     )}
                   </BreadcrumbItem>
-                  {!isLast && <BreadcrumbSeparator className="hidden md:block" />}
+                  {!isLast && (
+                    <BreadcrumbSeparator className="hidden md:block" />
+                  )}
                 </React.Fragment>
               );
             })}
@@ -60,7 +63,19 @@ export function SiteHeader() {
         </Breadcrumb>
       </div>
 
-      <ModeToggle />
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" asChild className="hover:bg-neutral-400 transition-all duration-300">
+          <a
+            href="https://github.com/dhanushd-27/Recall"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Github className="size-4" />
+            <span className="sr-only">GitHub</span>
+          </a>
+        </Button>
+        <ModeToggle />
+      </div>
     </header>
   );
 }

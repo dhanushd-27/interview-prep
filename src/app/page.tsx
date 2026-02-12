@@ -4,8 +4,9 @@ export default function Page() {
       <div className="max-w-md space-y-4">
         <h1 className="text-4xl font-bold tracking-tight">Recall</h1>
         <p className="text-muted-foreground">
-          Select a topic from the sidebar to start reviewing your interview
-          preparation materials.
+          Welcome to Recall, your personal space for technical interview
+          preparation. Navigate through the sidebar to access curated notes and
+          questions on JavaScript, TypeScript, and other core technologies.
         </p>
       </div>
     </div>
