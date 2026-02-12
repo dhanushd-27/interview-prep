@@ -1,77 +1,172 @@
-# Functions - Questions and Answers
+# Javascript Functions
 
-1. **What is the difference between function declarations and function expressions?**
-   - **Function Declaration**: Defined with the `function` keyword followed by the name. They are fully hoisted, meaning they can be called before their definition in the code.
-     ```javascript
-     function greeted() {
-       return "Hello!";
-     }
-     ```
-   - **Function Expression**: A function is assigned to a variable. They are not hoisted in the same way; the variable name is hoisted (if using `var`), but the function assignment happens at runtime.
-     ```javascript
-     const greet = function () {
-       return "Hello!";
-     };
-     ```
+## Beginner
 
----
+### 1. Pure Functions
 
-2. **Explain arrow functions and how they differ from regular functions.**
+**Question:**
+Refactor the following function to be a **Pure Function**. Why is it currently impure?
 
-   Arrow functions (`() => {}`) were introduced in ES6 and have several key differences:
-   - **`this` binding**: Arrow functions do not have their own `this`; they inherit `this` from the lexical scope.
-   - **`arguments` object**: Arrow functions do not have an `arguments` object.
-   - **Constructor**: Arrow functions cannot be used as constructors (cannot use `new`).
-   - **Syntax**: More concise, and allows implicit returns for single-expression bodies.
+```javascript
+let total = 0;
 
----
+function addToTotal(amount) {
+  total += amount;
+  return total;
+}
+```
 
-3. **What are higher-order functions? Give examples.**
+**Answer:**
+**Why Impure:**
 
-   A higher-order function is a function that either takes one or more functions as arguments or returns a function as its result.
-   - **Examples**: `map()`, `filter()`, `reduce()`, `setTimeout()`, and custom functions that return other functions.
+1. It modifies an external variable (`total`). This is a **side effect**.
+2. It depends on external state. calling `addToTotal(5)` twice yields different results (`5`, then `10`).
 
----
+**Refactored (Pure):**
+A pure function depends only on its inputs and returns a new value without side effects.
 
-4. **Explain `call()`, `apply()`, and `bind()` methods.**
-   - **`call()`**: Invokes a function with a given `this` value and arguments provided individually.
-     ```javascript
-     func.call(thisArg, arg1, arg2);
-     ```
-   - **`apply()`**: Invokes a function with a given `this` value and arguments provided as an array (or array-like object).
-     ```javascript
-     func.apply(thisArg, [arg1, arg2]);
-     ```
-   - **`bind()`**: Returns a new function with a fixed `this` value and initial arguments, without immediately invoking it.
+```javascript
+function add(currentTotal, amount) {
+  return currentTotal + amount;
+}
+```
 
----
+### 2. Higher-Order Functions
 
-5. **What is a callback function?**
+**Question:**
+Write a function `createMultiplier(n)` that returns a new function. The returned function should take a number `x` and return `x * n`.
 
-   A callback function is a function passed as an argument to another function, which is then executed inside the outer function to complete some kind of routine or action. Callbacks are often used in asynchronous operations.
+```javascript
+const double = createMultiplier(2);
+console.log(double(5)); // Should log 10
+```
 
----
+**Answer:**
+This demonstrates a **Closure** and a **Higher-Order Function**.
 
-6. **What are pure functions?**
+```javascript
+function createMultiplier(n) {
+  return function (x) {
+    return x * n;
+  };
+}
+// Arrow function version:
+// const createMultiplier = (n) => (x) => x * n;
+```
 
-   A pure function is a function that:
-   - Always returns the same output for the same input.
-   - Has no side effects (does not modify external state, console logs, or perform I/O).
+## Intermediate
 
----
+### 1. Arrow Functions & `this` Context
 
-7. **Explain IIFE (Immediately Invoked Function Expression).**
+**Question:**
+You have a class component (or object) where a method loses its `this` context when passed as a callback.
 
-   An IIFE is a function that runs as soon as it is defined. It's often used to create a private scope and avoid polluting the global namespace.
+```javascript
+class ButtonHandler {
+  constructor() {
+    this.clicked = false;
+  }
 
-   ```javascript
-   (function () {
-     // code here
-   })();
-   ```
+  handleClick() {
+    this.clicked = true;
+    console.log("Clicked:", this.clicked);
+  }
+}
 
----
+const handler = new ButtonHandler();
+const btn = document.querySelector("button");
 
-8. **What is function currying?**
+// Problem: 'this' is undefined or the button element inside handleClick
+btn.addEventListener("click", handler.handleClick);
+```
 
-   Currying is a transformation of functions that translates a function from callable as `f(a, b, c)` into callable as `f(a)(b)(c)`. It allows you to partially apply arguments and create specialized versions of a function.
+How do you fix this? Explain why the arrow function solution works.
+
+**Answer:**
+**Fix 1 (Bind in Constructor):**
+`this.handleClick = this.handleClick.bind(this);`
+
+**Fix 2 (Class Fields / Arrow Function):**
+
+```javascript
+handleClick = () => {
+  this.clicked = true;
+};
+```
+
+**Reason:**
+Standard functions have their own `this` context determined by _how_ they are called. When passed as a callback, the browser calls it with `this` set to the element (or undefined).
+**Arrow functions** do not have their own `this`; they inherit it lexically from the scope they were defined in (the class instance).
+
+### 2. Function Currying
+
+**Question:**
+Write a practical `logger` function that uses currying. It should accept a log level (e.g., "INFO", "ERROR") first, and then the message.
+
+**Goal:**
+
+```javascript
+const infoLog = logger("INFO");
+infoLog("System started"); // Output: [INFO] System started
+```
+
+**Answer:**
+
+```javascript
+const logger = (level) => (message) => {
+  console.log(`[${level}] ${message}`);
+};
+```
+
+This pattern allows partial application—configuring a generic function once to create specialized versions.
+
+## Advanced
+
+### 1. Memoization Implementation
+
+**Question:**
+Implement a generic `memoize` function that caches the results of expensive function calls.
+Use `JSON.stringify` for the key. Why is this usually bad for production?
+
+**Answer:**
+
+```javascript
+function memoize(fn) {
+  const cache = new Map();
+  return function (...args) {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) return cache.get(key);
+
+    const result = fn.apply(this, args);
+    cache.set(key, result);
+    return result;
+  };
+}
+```
+
+**Why Bad for Production:**
+
+1. **Memory Leak:** The cache grows indefinitely. We need an eviction strategy (LRU) or `WeakMap`.
+2. **Speed:** `JSON.stringify` is slow (O(n)).
+3. **Values:** It fails on non-serializable arguments (functions, circular refs).
+
+### 2. Debounce Implementation
+
+**Question:**
+Implement a `debounce` function. Explain how it works and where it is used.
+
+**Answer:**
+Debouncing ensures a function is only executed after a certain amount of time has passed since it was last invoked. Useful for search inputs to prevent API spam.
+
+```javascript
+function debounce(func, delay) {
+  let timeoutId;
+
+  return function (...args) {
+    clearTimeout(timeoutId); // Cancel previous timer
+    timeoutId = setTimeout(() => {
+      func.apply(this, args);
+    }, delay);
+  };
+}
+```

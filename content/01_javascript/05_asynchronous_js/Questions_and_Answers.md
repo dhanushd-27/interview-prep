@@ -1,54 +1,161 @@
-# Asynchronous JavaScript - Questions and Answers
+# Javascript Asynchronous
 
-1. **What is the event loop?**
+## Beginner
 
-   The event loop is a constant process that monitors both the Callback Queue and the Call Stack. If the Call Stack is empty, the event loop takes the first event from the queue and pushes it onto the stack, which effectively runs it. This is how JavaScript can be non-blocking and manage asynchronous operations despite being single-threaded.
+### 1. The Event Loop (High Level)
 
----
+**Question:**
+In simple terms, how does JavaScript handle asynchronous operations (like fetching data) if it is single-threaded?
 
-2. **Explain the call stack and callback queue.**
-   - **Call Stack**: A LIFO (Last In, First Out) data structure that keeps track of the function calls. When a function is called, it's pushed onto the stack. When it returns, it's popped off.
-   - **Callback Queue** (or Task Queue): A FIFO (First In, First Out) data structure where callbacks from asynchronous operations (like `setTimeout`, DOM events) wait to be executed once the call stack is empty.
+**Answer:**
+JavaScript delegates these operations (networking, timers) to the browser/environment (Web APIs). When the operation completes, a callback is placed in a **Queue**. The **Event Loop** constantly checks if the main Call Stack is empty; if so, it moves the callback from the Queue to the Stack for execution.
 
----
+### 2. Promises vs Callbacks
 
-3. **What are Promises? Explain their states.**
+**Question:**
+Why do we prefer Promises (and async/await) over callbacks?
 
-   A Promise is an object representing the eventual completion (or failure) of an asynchronous operation and its resulting value. It has three states:
-   - **Pending**: Initial state, neither fulfilled nor rejected.
-   - **Fulfilled**: The operation completed successfully.
-   - **Rejected**: The operation failed.
+**Answer:**
 
----
+1. **Avoids Callback Hell:** deeply nested callbacks are hard to read and debug.
+2. **Standardized Error Handling:** `.catch()` or `try/catch` vs checking `err` in every callback.
+3. **Composability:** `Promise.all`, `Promise.race` make coordinating multiple tasks easier.
 
-4. **What is Promise chaining?**
+## Intermediate
 
-   Promise chaining is a technique where multiple asynchronous operations are performed in sequence by returning a new promise from a `.then()` handler. This avoids "callback hell" and makes the code more readable.
+### 1. Async/Await & Error Handling
 
----
+**Question:**
+Refactor the following code to use `async/await`. Ensure you properly handle errors.
 
-5. **Explain `async/await` syntax.**
+```javascript
+function getUserData(id) {
+  return fetch(`/api/user/${id}`)
+    .then((res) => {
+      if (!res.ok) throw new Error("Fetch failed");
+      return res.json();
+    })
+    .then((data) => {
+      console.log(data);
+      return data;
+    })
+    .catch((err) => {
+      console.error(err);
+    });
+}
+```
 
-   Introduced in ES2017, `async/await` is syntactic sugar built on top of Promises.
-   - `async` keyword: Makes a function return a promise and allows the use of `await` inside it.
-   - `await` keyword: Pauses the execution of the async function until the promise is settled (fulfilled or rejected), and then returns the fulfilled value.
+**Answer:**
 
----
+```javascript
+async function getUserData(id) {
+  try {
+    const res = await fetch(`/api/user/${id}`);
+    if (!res.ok) throw new Error("Fetch failed");
 
-6. **What is the difference between `Promise.all()`, `Promise.race()`, `Promise.allSettled()`, and `Promise.any()`?**
-   - **`Promise.all([p1, p2, ...])`**: Fulfills when **all** promises fulfill; rejects if **any** promise rejects.
-   - **`Promise.race([p1, p2, ...])`**: Settles as soon as the **first** promise settles (either fulfills or rejects).
-   - **`Promise.allSettled([p1, p2, ...])`**: Fulfills after **all** promises have settled, regardless of whether they were fulfilled or rejected.
-   - **`Promise.any([p1, p2, ...])`**: Fulfills as soon as **any** of the promises fulfills; rejects only if **all** promises reject.
+    const data = await res.json();
+    console.log(data);
+    return data;
+  } catch (err) {
+    console.error(err);
+  }
+}
+```
 
----
+**Key Points:**
 
-7. **How do you handle errors in Promises and async/await?**
-   - **Promises**: Use the `.catch()` method at the end of the chain or as the second argument to `.then()`.
-   - **async/await**: Use `try...catch` blocks around the `await` expressions.
+- Use `try/catch` block for error handling.
+- `await` pauses execution until the promise settles.
+- Still need to check `res.ok` for fetch (as 404s don't throw).
 
----
+### 2. Promise Combinators
 
-8. **What are microtasks and macrotasks?**
-   - **Microtasks**: Tasks with higher priority, such as Promise callbacks (`.then`, `.catch`, `.finally`) and `process.nextTick` (in Node.js). They are executed immediately after the current task and before the next macrotask.
-   - **Macrotasks** (or Tasks): Standard tasks like `setTimeout`, `setInterval`, `setImmediate`, I/O, and UI rendering.
+**Question:**
+You need to fetch data from 3 different APIs. You want to proceed as soon as **any one** of them returns a successful result. Which Promise method should you use?
+What if you need **all** of them to succeed?
+
+**Answer:**
+
+- **Any one succeeds (First success):** use `Promise.any([p1, p2, p3])`. It ignores rejections unless _all_ fail.
+- **First one settles (Success or Fail):** use `Promise.race([p1, p2, p3])`.
+- **All must succeed:** use `Promise.all([p1, p2, p3])`. It fails fast if _any_ promise rejects.
+
+## Advanced
+
+### 1. Event Loop Internals (Microtasks vs Macrotasks)
+
+**Question:**
+What is the order of execution for the following code? explain why.
+
+```javascript
+console.log("Start");
+
+setTimeout(() => console.log("Timeout"), 0);
+
+Promise.resolve().then(() => console.log("Promise"));
+
+console.log("End");
+```
+
+**Answer:**
+**Order:** `Start`, `End`, `Promise`, `Timeout`
+
+**Why:**
+
+1. `Start` and `End` are synchronous (Call Stack).
+2. `Promise.then()` callbacks go to the **Microtask Queue**.
+3. `setTimeout` callbacks go to the **Macrotask Queue** (Task Queue).
+4. Examples of Microtasks: `Promise.then`, `queueMicrotask`, `MutationObserver`.
+5. The Event Loop processes **all** microtasks before moving to the next macrotask. Thus, "Promise" logs before "Timeout".
+
+### 2. Implementing Promise.all()
+
+**Question:**
+Implement `Promise.all` from scratch. It should take an array of promises and return a single promise that resolves with an array of results, or rejects immediately if any promise fails.
+
+**Answer:**
+
+```javascript
+function myPromiseAll(promises) {
+  return new Promise((resolve, reject) => {
+    const results = [];
+    let completed = 0;
+
+    if (promises.length === 0) resolve(results);
+
+    promises.forEach((p, index) => {
+      // Ensure p is a promise
+      Promise.resolve(p)
+        .then((val) => {
+          results[index] = val; // Store result at correct index
+          completed++;
+          if (completed === promises.length) resolve(results);
+        })
+        .catch((err) => reject(err)); // Fail fast
+    });
+  });
+}
+```
+
+### 3. Async Generators
+
+**Question:**
+How would you iterate over an async data stream (like paginated API responses) using `for await...of`?
+
+**Answer:**
+You utilize Async Iterators/Generators.
+
+```javascript
+async function* fetchPages(url) {
+  let nextPage = url;
+  while (nextPage) {
+    const response = await fetch(nextPage);
+    const data = await response.json();
+    nextPage = data.next;
+    yield data.results;
+  }
+}
+
+// Usage
+// for await (const pageItems of fetchPages('/api/items')) { ... }
+```

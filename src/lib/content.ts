@@ -29,7 +29,23 @@ function getDirContent(dir: string): ContentItem[] {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
 
   // Sort entries by name to respect "01_", "02_" prefixes
-  entries.sort((a, b) => a.name.localeCompare(b.name));
+  // But prioritize "Introduction" or files starting with "01_Introduction" or similar if needed.
+  // Actually, the user wants "Introduction" at the top.
+  entries.sort((a, b) => {
+    const aName = a.name.toLowerCase();
+    const bName = b.name.toLowerCase();
+
+    const isAIntro = aName.includes("introduction") || aName.includes("readme");
+    const isBIntro = bName.includes("introduction") || bName.includes("readme");
+
+    if (isAIntro && !isBIntro) return -1;
+    if (!isAIntro && isBIntro) return 1;
+
+    return a.name.localeCompare(b.name, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  });
 
   const items: ContentItem[] = [];
 
